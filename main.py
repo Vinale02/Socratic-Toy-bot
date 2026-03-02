@@ -13,6 +13,19 @@ dp = Dispatcher()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s %(message)s')
 
+@dp.startup()
+async def on_startup():
+    session = aiohttp.ClientSession()
+    dp['session'] = session
+    print('Сессия создана')
+
+@dp.shutdown()
+async def on_shutdown():
+    session = dp.get('session')
+    if session:
+        await session.close()
+        print('Сессия закрыта')
+
 @dp.message(Command('start'))
 async def cmd_start(message: Message):
     await message.answer('Привет, я бот-учебный проект, созданный непонятно зачем. Используй команду "/help", чтобы увидеть список доступных команд.')
@@ -42,32 +55,36 @@ async def cmd_whoami(message: Message):
         f'ID чата: {message.chat.id}',
         f'Тип чата: {message.chat.type}'
     )
-    await message.answer(str(info))
+    await message.answer('\n'.join(info))
 
 @dp.message(Command('price_btc'))
-async def cmd_price_btc(message: Message):
-    async with aiohttp.ClientSession() as session:
-        price_data = await get_info_price_btc(session)
-        await message.answer(f'1 биткоин стоит {price_data['bitcoin']['usd']}$')
+async def cmd_price_btc(message: Message, session: aiohttp.ClientSession):
+    price_data = await get_info_price_btc(message, session)
+    await message.answer(f'1 биткоин стоит {price_data['bitcoin']['usd']}$')
 
-async def get_info_price_btc(session: aiohttp.ClientSession):
-    async with session.get(
+async def get_info_price_btc(message: Message, session: aiohttp.ClientSession):
+    try:
+        async with session.get(
             f'https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=bitcoin&names=Bitcoin&symbols=btc?x_cg_demo_api_key={COINGECKO_API}') as response:
-        return await response.json()
+                return await response.json()
+    except Exception as e:
+        print(f'Сервер недоступен. Ошибка: {e}')
+        await message.answer('Извините, сервис временно недоступен')
 
 @dp.message(F.text.lower() == 'хочу котика')
-async def print_cat(message: Message):
-    async with aiohttp.ClientSession() as session:
-        cat_image = await get_cat(session)
-        photo = cat_image[0]['url']
-        await message.answer_photo(photo)
+async def print_cat(message: Message, session: aiohttp.ClientSession):
+    cat_image = await get_cat(message, session)
+    photo = cat_image[0]['url']
+    await message.answer_photo(photo)
 
-        #await message.answer_photo(cat_image)
-
-async def get_cat(session: aiohttp.ClientSession):
-    async with session.get(
+async def get_cat(message: Message, session: aiohttp.ClientSession):
+    try:
+        async with session.get(
             'https://api.thecatapi.com/v1/images/search') as response:
-        return await response.json()
+                return await response.json()
+    except Exception as e:
+        print(f'Сервер недоступен. Ошибка: {e}')
+        await message.answer('Извините, сервис временно недоступен')
 
 @dp.message(F.text.lower() == 'привет')
 async def send_greeting(message: Message):
