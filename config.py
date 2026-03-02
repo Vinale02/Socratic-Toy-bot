@@ -5,3 +5,4 @@ dotenv.load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 COINGECKO_API = os.getenv("COINGECKO_API")
+WEATHER_API = os.getenv("WEATHER_API")
