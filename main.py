@@ -60,7 +60,8 @@ async def cmd_whoami(message: Message):
 @dp.message(Command('price_btc'))
 async def cmd_price_btc(message: Message, session: aiohttp.ClientSession):
     price_data = await get_info_price_btc(message, session)
-    await message.answer(f'1 биткоин стоит {price_data['bitcoin']['usd']}$')
+    if price_data:
+        await message.answer(f'1 биткоин стоит {price_data['bitcoin']['usd']}$')
 
 async def get_info_price_btc(message: Message, session: aiohttp.ClientSession):
     try:
@@ -68,14 +69,15 @@ async def get_info_price_btc(message: Message, session: aiohttp.ClientSession):
             f'https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=bitcoin&names=Bitcoin&symbols=btc?x_cg_demo_api_key={COINGECKO_API}') as response:
                 return await response.json()
     except Exception as e:
-        print(f'Сервер недоступен. Ошибка: {e}')
+        logging.error(f'Ошибка: {e}')
         await message.answer('Извините, сервис временно недоступен')
 
 @dp.message(F.text.lower() == 'хочу котика')
 async def print_cat(message: Message, session: aiohttp.ClientSession):
     cat_image = await get_cat(message, session)
-    photo = cat_image[0]['url']
-    await message.answer_photo(photo)
+    if cat_image:
+        photo = cat_image[0]['url']
+        await message.answer_photo(photo)
 
 async def get_cat(message: Message, session: aiohttp.ClientSession):
     try:
@@ -83,7 +85,7 @@ async def get_cat(message: Message, session: aiohttp.ClientSession):
             'https://api.thecatapi.com/v1/images/search') as response:
                 return await response.json()
     except Exception as e:
-        print(f'Сервер недоступен. Ошибка: {e}')
+        logging.error(f'Ошибка: {e}')
         await message.answer('Извините, сервис временно недоступен')
 
 @dp.message(F.text.lower() == 'привет')
